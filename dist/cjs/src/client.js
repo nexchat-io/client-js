@@ -98,7 +98,7 @@ var NexChat = /** @class */ (function () {
         this.logsEnabled = false;
         this.activeChannels = {};
         this.listeners = {};
-        this.isS2SInvocation = !!apiSecret;
+        this.isServerIntegration = !!apiSecret;
         this.apiKey = apiKey;
         this.apiSecret = apiSecret;
         this.api = axios_1.default.create({
@@ -161,7 +161,7 @@ var NexChat = /** @class */ (function () {
             var _this = this;
             return __generator(this, function (_a) {
                 return [2 /*return*/, new Promise(function (resolve, reject) {
-                        if (!_this.isS2SInvocation) {
+                        if (!_this.isServerIntegration) {
                             (0, utils_1.invalidInvocationError)(reject);
                         }
                         _this.api
@@ -212,7 +212,7 @@ var NexChat = /** @class */ (function () {
             var _this = this;
             return __generator(this, function (_a) {
                 return [2 /*return*/, new Promise(function (resolve, reject) {
-                        if (_this.isS2SInvocation) {
+                        if (_this.isServerIntegration) {
                             (0, utils_1.invalidInvocationError)(reject);
                         }
                         _this.api
@@ -293,19 +293,19 @@ var NexChat = /** @class */ (function () {
         });
     };
     /**
-     * Update user.
+     * Update current logged in user.
      * @param user - The user object.
      * @returns A promise that resolves to the updated user.
-     * @throws Error if loginUser is not called before updating user.
+     * @throws Error if loginUser is not called before updating user. Use upsertUserAsync for server integration.
      */
     NexChat.prototype.updateUserAsync = function (user) {
         return __awaiter(this, void 0, void 0, function () {
             var _this = this;
             return __generator(this, function (_a) {
-                if (!this.externalUserId) {
-                    throw new Error("Call loginUser before updating user");
-                }
                 return [2 /*return*/, new Promise(function (resolve, reject) {
+                        if (_this.isServerIntegration) {
+                            throw new Error("This method is only available for client integration");
+                        }
                         _this.api
                             .put("/users/".concat(_this.externalUserId), user)
                             .then(function (_a) {
@@ -319,6 +319,34 @@ var NexChat = /** @class */ (function () {
                             .catch(function (error) {
                             var _a, _b, _c, _d;
                             return reject((_d = (_c = (_b = (_a = error === null || error === void 0 ? void 0 : error.response) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b.error) !== null && _c !== void 0 ? _c : error === null || error === void 0 ? void 0 : error.message) !== null && _d !== void 0 ? _d : "Error updating user");
+                        });
+                    })];
+            });
+        });
+    };
+    /**
+     * Upsert a user. Only for server integration.
+     * @param user - The user object.
+     * @returns A promise that resolves to the updated user.
+     * @throws Error if not server integration.
+     */
+    NexChat.prototype.upsertUserAsync = function (user) {
+        return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
+            return __generator(this, function (_a) {
+                if (!this.isServerIntegration) {
+                    throw new Error("This method is only available for server integration");
+                }
+                return [2 /*return*/, new Promise(function (resolve, reject) {
+                        _this.api
+                            .put("/users/".concat(user.externalUserId), lodash_1.default.omit(user, "externalUserId"))
+                            .then(function (_a) {
+                            var data = _a.data;
+                            resolve(data.user);
+                        })
+                            .catch(function (error) {
+                            var _a, _b, _c, _d;
+                            return reject((_d = (_c = (_b = (_a = error === null || error === void 0 ? void 0 : error.response) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b.error) !== null && _c !== void 0 ? _c : error === null || error === void 0 ? void 0 : error.message) !== null && _d !== void 0 ? _d : "Error upserting user");
                         });
                     })];
             });
@@ -388,7 +416,7 @@ var NexChat = /** @class */ (function () {
             var _this = this;
             return __generator(this, function (_a) {
                 return [2 /*return*/, new Promise(function (resolve, reject) {
-                        if (_this.isS2SInvocation) {
+                        if (_this.isServerIntegration) {
                             throw new Error("Websocket connection is not supported for server to server integration");
                         }
                         if (!_this.externalUserId || !_this.authToken) {

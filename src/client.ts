@@ -21,7 +21,7 @@ export class NexChat {
   private apiKey: string;
   private apiSecret?: string;
 
-  private isS2SInvocation: boolean;
+  private isServerIntegration: boolean;
   private authToken?: string;
   public externalUserId?: string;
   private ws?: WebSocket;
@@ -43,7 +43,7 @@ export class NexChat {
    * @param apiSecret - The API secret (required for server auth).
    */
   constructor(apiKey: string, apiSecret?: string) {
-    this.isS2SInvocation = !!apiSecret;
+    this.isServerIntegration = !!apiSecret;
     this.apiKey = apiKey;
     this.apiSecret = apiSecret;
     this.api = axios.create({
@@ -108,7 +108,7 @@ export class NexChat {
    */
   async createUserTokenAsync(externalUserId: string): Promise<string> {
     return new Promise((resolve, reject) => {
-      if (!this.isS2SInvocation) {
+      if (!this.isServerIntegration) {
         invalidInvocationError(reject);
       }
 
@@ -153,7 +153,7 @@ export class NexChat {
     authToken: string
   ): Promise<User> {
     return new Promise((resolve, reject) => {
-      if (this.isS2SInvocation) {
+      if (this.isServerIntegration) {
         invalidInvocationError(reject);
       }
 
@@ -239,18 +239,18 @@ export class NexChat {
   }
 
   /**
-   * Update user.
+   * Update current logged in user.
    * @param user - The user object.
    * @returns A promise that resolves to the updated user.
-   * @throws Error if loginUser is not called before updating user.
+   * @throws Error if loginUser is not called before updating user. Use upsertUserAsync for server integration.
    */
   async updateUserAsync(
     user: Partial<Omit<User, "externalUserId">>
   ): Promise<User> {
-    if (!this.externalUserId) {
-      throw new Error("Call loginUser before updating user");
-    }
     return new Promise((resolve, reject) => {
+      if (this.isServerIntegration) {
+        throw new Error("This method is only available for client integration");
+      }
       this.api
         .put(`/users/${this.externalUserId}`, user)
         .then(({ data }) => {
@@ -266,6 +266,32 @@ export class NexChat {
             error?.response?.data?.error ??
               error?.message ??
               "Error updating user"
+          )
+        );
+    });
+  }
+
+  /**
+   * Upsert a user. Only for server integration.
+   * @param user - The user object.
+   * @returns A promise that resolves to the updated user.
+   * @throws Error if not server integration.
+   */
+  async upsertUserAsync(user: User): Promise<User> {
+    if (!this.isServerIntegration) {
+      throw new Error("This method is only available for server integration");
+    }
+    return new Promise((resolve, reject) => {
+      this.api
+        .put(`/users/${user.externalUserId}`, _.omit(user, "externalUserId"))
+        .then(({ data }) => {
+          resolve(data.user);
+        })
+        .catch((error) =>
+          reject(
+            error?.response?.data?.error ??
+              error?.message ??
+              "Error upserting user"
           )
         );
     });
@@ -348,7 +374,7 @@ export class NexChat {
    */
   async connectAsync(): Promise<void> {
     return new Promise((resolve, reject) => {
-      if (this.isS2SInvocation) {
+      if (this.isServerIntegration) {
         throw new Error(
           "Websocket connection is not supported for server to server integration"
         );

@@ -9,7 +9,7 @@ export declare class NexChat {
     api: AxiosInstance;
     private apiKey;
     private apiSecret?;
-    private isS2SInvocation;
+    private isServerIntegration;
     private authToken?;
     externalUserId?: string;
     private ws?;
@@ -81,12 +81,19 @@ export declare class NexChat {
         isLastPage: boolean;
     }>;
     /**
-     * Update user.
+     * Update current logged in user.
      * @param user - The user object.
      * @returns A promise that resolves to the updated user.
-     * @throws Error if loginUser is not called before updating user.
+     * @throws Error if loginUser is not called before updating user. Use upsertUserAsync for server integration.
      */
     updateUserAsync(user: Partial<Omit<User, "externalUserId">>): Promise<User>;
+    /**
+     * Upsert a user. Only for server integration.
+     * @param user - The user object.
+     * @returns A promise that resolves to the updated user.
+     * @throws Error if not server integration.
+     */
+    upsertUserAsync(user: User): Promise<User>;
     /**
      * Adds a listener for a specific event type.
      * @param eventType - The event type.
