@@ -2,11 +2,26 @@
   "name": "@nexchat/chat-js",
   "version": "0.0.1",
   "description": "Javascript package to integrate NexChat into your app.",
-  "main": "index.ts",
   "private": true,
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
+    }
   },
+  "scripts": {
+    "build": "npm run build:esm && npm run build:cjs",
+    "build:esm": "tsc --module ES2015 --outDir dist/esm",
+    "build:cjs": "tsc --module CommonJS --outDir dist/cjs"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
   "keywords": [
     "chat",
     "realtime",
@@ -20,7 +35,10 @@
     "axios-logger": "^2.8.1"
   },
   "devDependencies": {
-    "@types/lodash": "^4.17.7"
+    "@types/lodash": "^4.17.7",
+    "@types/node": "^22.0.0",
+    "esbuild": "0.23.0",
+    "typescript": "^5.5.4"
   },
   "engines": {
     "node": ">=18"

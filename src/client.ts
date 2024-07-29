@@ -365,6 +365,7 @@ export class NexChat {
         return;
       }
 
+      // @ts-ignore
       this.ws = new WebSocket(WEB_SOCKET_URL, undefined, {
         headers: {
           api_key: this.apiKey,
@@ -383,6 +384,7 @@ export class NexChat {
       };
 
       this.ws.onerror = (e) => {
+        // @ts-ignore
         this.log(e.message);
 
         this.socketRetryCount += 1;
