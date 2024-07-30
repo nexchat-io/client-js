@@ -200,8 +200,11 @@ var Channel = /** @class */ (function () {
     };
     /**
      * Sends a message to the channel.
-     * @param text - The text of the message.
-     * @param externalUserId - In case of server side invocation, the externalUserId of the sender.
+     * @param {Object} param - An object containing the message details.
+     * @param {string} param.text - The text of the message.
+     * @param {string} param.externalUserId - In case of server side invocation, the externalUserId of the sender.
+     * @param {Object} param.urlPreview - A object containing metadata of URL preview to be shown.
+     * @param {Array} param.attachments - An array of attachments to send with the message.
      * @returns A promise that resolves to the sent message.
      */
     Channel.prototype.sendMessageAsync = function (_a) {
