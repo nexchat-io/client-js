@@ -279,6 +279,7 @@ export class Channel {
           `/channels/${this.channelId}/members/${this.client.externalUserId}/block`
         )
         .then(() => {
+          this.isBlocked = true;
           resolve(undefined);
         })
         .catch(reject);
@@ -296,6 +297,7 @@ export class Channel {
           `/channels/${this.channelId}/members/${this.client.externalUserId}/un-block`
         )
         .then(() => {
+          this.isBlocked = false;
           resolve(undefined);
         })
         .catch(reject);
