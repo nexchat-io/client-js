@@ -284,6 +284,7 @@ var Channel = /** @class */ (function () {
             _this.client.api
                 .post("/channels/".concat(_this.channelId, "/members/").concat(_this.client.externalUserId, "/block"))
                 .then(function () {
+                _this.isBlocked = true;
                 resolve(undefined);
             })
                 .catch(reject);
@@ -299,6 +300,7 @@ var Channel = /** @class */ (function () {
             _this.client.api
                 .post("/channels/".concat(_this.channelId, "/members/").concat(_this.client.externalUserId, "/un-block"))
                 .then(function () {
+                _this.isBlocked = false;
                 resolve(undefined);
             })
                 .catch(reject);
