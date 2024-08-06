@@ -2,7 +2,12 @@ import axios, { AxiosInstance } from "axios";
 import * as AxiosLogger from "axios-logger";
 import _ from "lodash";
 import { Channel } from "./channel";
-import { BASE_URL, WEB_SOCKET_URL } from "./constants";
+import {
+  DEV_BASE_URL,
+  DEV_WEB_SOCKET_URL,
+  PROD_BASE_URL,
+  PROD_WEB_SOCKET_URL,
+} from "./constants";
 import { ChannelData, SocketEvent, UploadUrlResponse, User } from "./types";
 import { genericCatch, invalidInvocationError } from "./utils";
 
@@ -47,12 +52,25 @@ export class NexChat {
     this.apiKey = apiKey;
     this.apiSecret = apiSecret;
     this.api = axios.create({
-      baseURL: BASE_URL,
+      baseURL: this.getBaseUrls().baseUrl,
       headers: {
         api_key: apiKey,
         api_secret: this.apiSecret,
       },
     });
+  }
+
+  private getBaseUrls() {
+    if (this.apiKey.startsWith("prod_")) {
+      return {
+        baseUrl: PROD_BASE_URL,
+        webSocketUrl: PROD_WEB_SOCKET_URL,
+      };
+    }
+    return {
+      baseUrl: DEV_BASE_URL,
+      webSocketUrl: DEV_WEB_SOCKET_URL,
+    };
   }
 
   /**
@@ -392,7 +410,7 @@ export class NexChat {
       }
 
       // @ts-ignore
-      this.ws = new WebSocket(WEB_SOCKET_URL, undefined, {
+      this.ws = new WebSocket(this.getBaseUrls().webSocketUrl, undefined, {
         headers: {
           api_key: this.apiKey,
           auth_token: this.authToken,
