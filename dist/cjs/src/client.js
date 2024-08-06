@@ -102,13 +102,25 @@ var NexChat = /** @class */ (function () {
         this.apiKey = apiKey;
         this.apiSecret = apiSecret;
         this.api = axios_1.default.create({
-            baseURL: constants_1.BASE_URL,
+            baseURL: this.getBaseUrls().baseUrl,
             headers: {
                 api_key: apiKey,
                 api_secret: this.apiSecret,
             },
         });
     }
+    NexChat.prototype.getBaseUrls = function () {
+        if (this.apiKey.startsWith("prod_")) {
+            return {
+                baseUrl: constants_1.PROD_BASE_URL,
+                webSocketUrl: constants_1.PROD_WEB_SOCKET_URL,
+            };
+        }
+        return {
+            baseUrl: constants_1.DEV_BASE_URL,
+            webSocketUrl: constants_1.DEV_WEB_SOCKET_URL,
+        };
+    };
     /**
      * Enables debug logs for the client.
      */
@@ -427,7 +439,7 @@ var NexChat = /** @class */ (function () {
                             return;
                         }
                         // @ts-ignore
-                        _this.ws = new WebSocket(constants_1.WEB_SOCKET_URL, undefined, {
+                        _this.ws = new WebSocket(_this.getBaseUrls().webSocketUrl, undefined, {
                             headers: {
                                 api_key: _this.apiKey,
                                 auth_token: _this.authToken,

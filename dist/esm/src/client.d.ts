@@ -29,6 +29,7 @@ export declare class NexChat {
      * @param apiSecret - The API secret (required for server auth).
      */
     constructor(apiKey: string, apiSecret?: string);
+    private getBaseUrls;
     /**
      * Enables debug logs for the client.
      */

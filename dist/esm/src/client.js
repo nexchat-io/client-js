@@ -49,7 +49,7 @@ import axios from "axios";
 import * as AxiosLogger from "axios-logger";
 import _ from "lodash";
 import { Channel } from "./channel";
-import { BASE_URL, WEB_SOCKET_URL } from "./constants";
+import { DEV_BASE_URL, DEV_WEB_SOCKET_URL, PROD_BASE_URL, PROD_WEB_SOCKET_URL, } from "./constants";
 import { genericCatch, invalidInvocationError } from "./utils";
 AxiosLogger.setGlobalConfig({
     params: true,
@@ -73,13 +73,25 @@ var NexChat = /** @class */ (function () {
         this.apiKey = apiKey;
         this.apiSecret = apiSecret;
         this.api = axios.create({
-            baseURL: BASE_URL,
+            baseURL: this.getBaseUrls().baseUrl,
             headers: {
                 api_key: apiKey,
                 api_secret: this.apiSecret,
             },
         });
     }
+    NexChat.prototype.getBaseUrls = function () {
+        if (this.apiKey.startsWith("prod_")) {
+            return {
+                baseUrl: PROD_BASE_URL,
+                webSocketUrl: PROD_WEB_SOCKET_URL,
+            };
+        }
+        return {
+            baseUrl: DEV_BASE_URL,
+            webSocketUrl: DEV_WEB_SOCKET_URL,
+        };
+    };
     /**
      * Enables debug logs for the client.
      */
@@ -398,7 +410,7 @@ var NexChat = /** @class */ (function () {
                             return;
                         }
                         // @ts-ignore
-                        _this.ws = new WebSocket(WEB_SOCKET_URL, undefined, {
+                        _this.ws = new WebSocket(_this.getBaseUrls().webSocketUrl, undefined, {
                             headers: {
                                 api_key: _this.apiKey,
                                 auth_token: _this.authToken,
