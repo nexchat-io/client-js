@@ -1,5 +1,5 @@
 {
-  "name": "@nexchat/chat-js",
+  "name": "@nexchat/client-js",
   "version": "0.0.1",
   "description": "Javascript package to integrate NexChat into your app.",
   "private": true,
