@@ -1,6 +1,6 @@
-import { AxiosInstance } from "axios";
-import { Channel } from "./channel";
-import { SocketEvent, UploadUrlResponse, User } from "./types";
+import { AxiosInstance } from 'axios';
+import { Channel } from './channel';
+import { SocketEvent, UploadUrlResponse, User } from './types';
 /**
  * Represents the NexChat class.
  */
@@ -87,7 +87,7 @@ export declare class NexChat {
      * @returns A promise that resolves to the updated user.
      * @throws Error if loginUser is not called before updating user. Use upsertUserAsync for server integration.
      */
-    updateUserAsync(user: Partial<Omit<User, "externalUserId">>): Promise<User>;
+    updateUserAsync(user: Partial<Omit<User, 'externalUserId'>>): Promise<User>;
     /**
      * Upsert a user. Only for server integration.
      * @param user - The user object.
@@ -112,11 +112,12 @@ export declare class NexChat {
     private handleSocketEvent;
     /**
      * Connects to the server asynchronously.
-     * @returns A promise that resolves when the connection is established.
+     * @returns void
      * @throws Error if loginUser is not called before connecting.
      */
     connectAsync(): Promise<void>;
-    setPushToken(pushToken: string, provider: "FCM" | "APNS"): void;
+    private connectToWebSocket;
+    setPushToken(pushToken: string, provider: 'FCM' | 'APNS'): void;
     unSetPushToken(pushToken: string): Promise<void>;
     getUsersAsync({ limit, offset, }: {
         limit?: number;

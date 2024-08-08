@@ -45,12 +45,13 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-import axios from "axios";
-import * as AxiosLogger from "axios-logger";
-import _ from "lodash";
-import { Channel } from "./channel";
-import { DEV_BASE_URL, DEV_WEB_SOCKET_URL, PROD_BASE_URL, PROD_WEB_SOCKET_URL, } from "./constants";
-import { genericCatch, invalidInvocationError } from "./utils";
+import axios from 'axios';
+import * as AxiosLogger from 'axios-logger';
+import _ from 'lodash';
+import { Channel } from './channel';
+import { DEV_BASE_URL, DEV_WEB_SOCKET_URL, PROD_BASE_URL, PROD_WEB_SOCKET_URL, } from './constants';
+import { genericCatch, invalidInvocationError } from './utils';
+import { backOff } from 'exponential-backoff';
 AxiosLogger.setGlobalConfig({
     params: true,
     headers: true,
@@ -81,7 +82,7 @@ var NexChat = /** @class */ (function () {
         });
     }
     NexChat.prototype.getBaseUrls = function () {
-        if (this.apiKey.startsWith("prod_")) {
+        if (this.apiKey.startsWith('prod_')) {
             return {
                 baseUrl: PROD_BASE_URL,
                 webSocketUrl: PROD_WEB_SOCKET_URL,
@@ -126,7 +127,7 @@ var NexChat = /** @class */ (function () {
      */
     NexChat.getInstance = function (apiKey, apiSecret) {
         if (!apiKey) {
-            throw new Error("API Key is required");
+            throw new Error('API Key is required');
         }
         if (!this.instance) {
             this.instance = new NexChat(apiKey, apiSecret);
@@ -222,10 +223,10 @@ var NexChat = /** @class */ (function () {
      * @param channelId - The channel ID.
      * @returns A promise that resolves to the channel.
      */
-    NexChat.prototype.getChannelByIdAsync = function (channelId, forceFetch) {
-        if (forceFetch === void 0) { forceFetch = false; }
-        return __awaiter(this, void 0, void 0, function () {
+    NexChat.prototype.getChannelByIdAsync = function (channelId_1) {
+        return __awaiter(this, arguments, void 0, function (channelId, forceFetch) {
             var _this = this;
+            if (forceFetch === void 0) { forceFetch = false; }
             return __generator(this, function (_a) {
                 return [2 /*return*/, new Promise(function (resolve, reject) {
                         var channel = _this.activeChannels[channelId];
@@ -250,10 +251,10 @@ var NexChat = /** @class */ (function () {
      * @returns A promise that resolves to an object containing the channels and whether it is the last page.
      */
     NexChat.prototype.getUserChannelsAsync = function (_a) {
-        var _b = _a.limit, limit = _b === void 0 ? 10 : _b, _c = _a.offset, offset = _c === void 0 ? 0 : _c;
-        return __awaiter(this, void 0, void 0, function () {
+        return __awaiter(this, arguments, void 0, function (_b) {
             var _this = this;
-            return __generator(this, function (_d) {
+            var _c = _b.limit, limit = _c === void 0 ? 10 : _c, _d = _b.offset, offset = _d === void 0 ? 0 : _d;
+            return __generator(this, function (_e) {
                 return [2 /*return*/, new Promise(function (resolve, reject) {
                         _this.api
                             .get("/users/".concat(_this.externalUserId, "/channels"), {
@@ -287,7 +288,7 @@ var NexChat = /** @class */ (function () {
             return __generator(this, function (_a) {
                 return [2 /*return*/, new Promise(function (resolve, reject) {
                         if (_this.isServerIntegration) {
-                            throw new Error("This method is only available for client integration");
+                            throw new Error('This method is only available for client integration');
                         }
                         _this.api
                             .put("/users/".concat(_this.externalUserId), user)
@@ -301,7 +302,7 @@ var NexChat = /** @class */ (function () {
                         })
                             .catch(function (error) {
                             var _a, _b, _c, _d;
-                            return reject((_d = (_c = (_b = (_a = error === null || error === void 0 ? void 0 : error.response) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b.error) !== null && _c !== void 0 ? _c : error === null || error === void 0 ? void 0 : error.message) !== null && _d !== void 0 ? _d : "Error updating user");
+                            return reject((_d = (_c = (_b = (_a = error === null || error === void 0 ? void 0 : error.response) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b.error) !== null && _c !== void 0 ? _c : error === null || error === void 0 ? void 0 : error.message) !== null && _d !== void 0 ? _d : 'Error updating user');
                         });
                     })];
             });
@@ -318,18 +319,18 @@ var NexChat = /** @class */ (function () {
             var _this = this;
             return __generator(this, function (_a) {
                 if (!this.isServerIntegration) {
-                    throw new Error("This method is only available for server integration");
+                    throw new Error('This method is only available for server integration');
                 }
                 return [2 /*return*/, new Promise(function (resolve, reject) {
                         _this.api
-                            .put("/users/".concat(user.externalUserId), _.omit(user, "externalUserId"))
+                            .put("/users/".concat(user.externalUserId), _.omit(user, 'externalUserId'))
                             .then(function (_a) {
                             var data = _a.data;
                             resolve(data.user);
                         })
                             .catch(function (error) {
                             var _a, _b, _c, _d;
-                            return reject((_d = (_c = (_b = (_a = error === null || error === void 0 ? void 0 : error.response) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b.error) !== null && _c !== void 0 ? _c : error === null || error === void 0 ? void 0 : error.message) !== null && _d !== void 0 ? _d : "Error upserting user");
+                            return reject((_d = (_c = (_b = (_a = error === null || error === void 0 ? void 0 : error.response) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b.error) !== null && _c !== void 0 ? _c : error === null || error === void 0 ? void 0 : error.message) !== null && _d !== void 0 ? _d : 'Error upserting user');
                         });
                     })];
             });
@@ -344,8 +345,8 @@ var NexChat = /** @class */ (function () {
      */
     NexChat.prototype.on = function (eventType, callback) {
         var _this = this;
-        if (typeof callback !== "function") {
-            throw new Error("Invalid callback. It has to be a function");
+        if (typeof callback !== 'function') {
+            throw new Error('Invalid callback. It has to be a function');
         }
         if (!this.listeners[eventType]) {
             this.listeners[eventType] = [];
@@ -375,7 +376,7 @@ var NexChat = /** @class */ (function () {
     //   data: SocketEvent[K],
     // ) {}
     NexChat.prototype.handleSocketEvent = function (data) {
-        this.log("Received socket data: ", data);
+        this.log('Received socket data: ', data);
         var jsonData = JSON.parse(data);
         var eventType = jsonData.eventType;
         var eventData = jsonData.data;
@@ -391,62 +392,70 @@ var NexChat = /** @class */ (function () {
     };
     /**
      * Connects to the server asynchronously.
-     * @returns A promise that resolves when the connection is established.
+     * @returns void
      * @throws Error if loginUser is not called before connecting.
      */
     NexChat.prototype.connectAsync = function () {
         return __awaiter(this, void 0, void 0, function () {
             var _this = this;
             return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve, reject) {
-                        if (_this.isServerIntegration) {
-                            throw new Error("Websocket connection is not supported for server to server integration");
-                        }
-                        if (!_this.externalUserId || !_this.authToken) {
-                            throw new Error("Call loginUser before connecting");
-                        }
-                        if (_this.ws) {
-                            _this.log("Already connected. You should only call this if connection is closed");
-                            return;
-                        }
-                        // @ts-ignore
-                        _this.ws = new WebSocket(_this.getBaseUrls().webSocketUrl, undefined, {
-                            headers: {
-                                api_key: _this.apiKey,
-                                auth_token: _this.authToken,
-                            },
-                        });
-                        _this.ws.onopen = function () {
-                            _this.socketRetryCount = 0;
-                            _this.log("Connected to the server");
-                            resolve();
-                        };
-                        _this.ws.onmessage = function (e) {
-                            _this.handleSocketEvent(e.data);
-                        };
-                        _this.ws.onerror = function (e) {
-                            // @ts-ignore
-                            _this.log(e.message);
-                            _this.socketRetryCount += 1;
-                            if (_this.socketRetryCount > 3) {
-                                reject();
-                            }
-                            setTimeout(function () {
-                                _this.connectAsync();
-                            }, 5000);
-                        };
-                        _this.ws.onclose = function (e) {
-                            _this.ws = undefined;
-                            _this.log(e.code, e.reason);
-                        };
-                    })];
+                if (this.isServerIntegration) {
+                    throw new Error('Websocket connection is not supported for server to server integration');
+                }
+                if (!this.externalUserId || !this.authToken) {
+                    throw new Error('Call loginUser before connecting');
+                }
+                if (this.ws) {
+                    this.log('Already connected. You should only call this if connection is closed');
+                    return [2 /*return*/];
+                }
+                backOff(function () { return _this.connectToWebSocket(); }, {
+                    jitter: 'full',
+                    numOfAttempts: 5,
+                    timeMultiple: 4,
+                }).catch(function (reason) {
+                    _this.log('Failed to connect to websocket after multiple attempts:', reason);
+                });
+                return [2 /*return*/];
             });
+        });
+    };
+    NexChat.prototype.connectToWebSocket = function () {
+        var _this = this;
+        return new Promise(function (resolve, reject) {
+            _this.log('Attempting connection to websocket');
+            // @ts-ignore
+            _this.ws = new WebSocket(_this.getBaseUrls().webSocketUrl, undefined, {
+                headers: {
+                    api_key: _this.apiKey,
+                    auth_token: _this.authToken,
+                },
+            });
+            _this.ws.onopen = function () {
+                _this.log('Connected to the websocket');
+                resolve({ message: 'Connected to the websocket' });
+            };
+            _this.ws.onmessage = function (event) {
+                _this.log('Received message from websocket', event === null || event === void 0 ? void 0 : event.data);
+                _this.handleSocketEvent(event === null || event === void 0 ? void 0 : event.data);
+            };
+            _this.ws.onerror = function (e) {
+                _this.ws = undefined;
+                // @ts-ignore
+                _this.log('Websocket connection error', e === null || e === void 0 ? void 0 : e.message);
+                reject === null || reject === void 0 ? void 0 : reject(e);
+            };
+            _this.ws.onclose = function (e) {
+                _this.ws = undefined;
+                _this.log('Websocket connection closed', e === null || e === void 0 ? void 0 : e.code, e === null || e === void 0 ? void 0 : e.reason);
+                reject === null || reject === void 0 ? void 0 : reject(e);
+            };
         });
     };
     NexChat.prototype.setPushToken = function (pushToken, provider) {
         var _this = this;
         if (!this.externalUserId) {
-            throw new Error("Call loginUser before setting device token");
+            throw new Error('Call loginUser before setting device token');
         }
         this.pushToken = pushToken;
         this.api
@@ -460,7 +469,7 @@ var NexChat = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         if (!this.externalUserId) {
-                            throw new Error("Call loginUser before setting device token");
+                            throw new Error('Call loginUser before setting device token');
                         }
                         return [4 /*yield*/, this.api
                                 .post("/users/".concat(this.externalUserId, "/push-token/delete"), { pushToken: pushToken })
@@ -477,7 +486,7 @@ var NexChat = /** @class */ (function () {
         var _b = _a.limit, limit = _b === void 0 ? 10 : _b, _c = _a.offset, offset = _c === void 0 ? 0 : _c;
         return new Promise(function (resolve, reject) {
             _this.api
-                .get("/users", { params: { limit: limit, offset: offset } })
+                .get('/users', { params: { limit: limit, offset: offset } })
                 .then(function (_a) {
                 var data = _a.data;
                 return resolve(data);
@@ -491,7 +500,7 @@ var NexChat = /** @class */ (function () {
             return __generator(this, function (_a) {
                 return [2 /*return*/, new Promise(function (resolve, reject) {
                         _this.api
-                            .post("/upload-url", uploadMetaData)
+                            .post('/upload-url', uploadMetaData)
                             .then(function (_a) {
                             var data = _a.data;
                             return data.urls;
@@ -503,7 +512,7 @@ var NexChat = /** @class */ (function () {
                                     return __assign(__assign({}, signedUrl), { uri: originalMetaData.fileUri });
                                 }
                                 else {
-                                    genericCatch("mimeType mismatch", reject);
+                                    genericCatch('mimeType mismatch', reject);
                                 }
                             });
                             resolve(dataWithFileUri);
@@ -517,8 +526,8 @@ var NexChat = /** @class */ (function () {
      * Logs out the user and closes the websocket connection.
      */
     NexChat.prototype.logoutUser = function () {
-        var _a;
         return __awaiter(this, void 0, void 0, function () {
+            var _a;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:

@@ -1,15 +1,16 @@
-import axios, { AxiosInstance } from "axios";
-import * as AxiosLogger from "axios-logger";
-import _ from "lodash";
-import { Channel } from "./channel";
+import axios, { AxiosInstance } from 'axios';
+import * as AxiosLogger from 'axios-logger';
+import _ from 'lodash';
+import { Channel } from './channel';
 import {
   DEV_BASE_URL,
   DEV_WEB_SOCKET_URL,
   PROD_BASE_URL,
   PROD_WEB_SOCKET_URL,
-} from "./constants";
-import { ChannelData, SocketEvent, UploadUrlResponse, User } from "./types";
-import { genericCatch, invalidInvocationError } from "./utils";
+} from './constants';
+import { ChannelData, SocketEvent, UploadUrlResponse, User } from './types';
+import { genericCatch, invalidInvocationError } from './utils';
+import { backOff } from 'exponential-backoff';
 
 AxiosLogger.setGlobalConfig({
   params: true,
@@ -61,7 +62,7 @@ export class NexChat {
   }
 
   private getBaseUrls() {
-    if (this.apiKey.startsWith("prod_")) {
+    if (this.apiKey.startsWith('prod_')) {
       return {
         baseUrl: PROD_BASE_URL,
         webSocketUrl: PROD_WEB_SOCKET_URL,
@@ -109,7 +110,7 @@ export class NexChat {
    */
   public static getInstance(apiKey: string, apiSecret?: string): NexChat {
     if (!apiKey) {
-      throw new Error("API Key is required");
+      throw new Error('API Key is required');
     }
 
     if (!this.instance) {
@@ -263,11 +264,11 @@ export class NexChat {
    * @throws Error if loginUser is not called before updating user. Use upsertUserAsync for server integration.
    */
   async updateUserAsync(
-    user: Partial<Omit<User, "externalUserId">>
+    user: Partial<Omit<User, 'externalUserId'>>
   ): Promise<User> {
     return new Promise((resolve, reject) => {
       if (this.isServerIntegration) {
-        throw new Error("This method is only available for client integration");
+        throw new Error('This method is only available for client integration');
       }
       this.api
         .put(`/users/${this.externalUserId}`, user)
@@ -283,7 +284,7 @@ export class NexChat {
           reject(
             error?.response?.data?.error ??
               error?.message ??
-              "Error updating user"
+              'Error updating user'
           )
         );
     });
@@ -297,11 +298,11 @@ export class NexChat {
    */
   async upsertUserAsync(user: User): Promise<User> {
     if (!this.isServerIntegration) {
-      throw new Error("This method is only available for server integration");
+      throw new Error('This method is only available for server integration');
     }
     return new Promise((resolve, reject) => {
       this.api
-        .put(`/users/${user.externalUserId}`, _.omit(user, "externalUserId"))
+        .put(`/users/${user.externalUserId}`, _.omit(user, 'externalUserId'))
         .then(({ data }) => {
           resolve(data.user);
         })
@@ -309,7 +310,7 @@ export class NexChat {
           reject(
             error?.response?.data?.error ??
               error?.message ??
-              "Error upserting user"
+              'Error upserting user'
           )
         );
     });
@@ -326,8 +327,8 @@ export class NexChat {
     eventType: K,
     callback: (data: SocketEvent[K]) => void
   ): () => void {
-    if (typeof callback !== "function") {
-      throw new Error("Invalid callback. It has to be a function");
+    if (typeof callback !== 'function') {
+      throw new Error('Invalid callback. It has to be a function');
     }
 
     if (!this.listeners[eventType]) {
@@ -365,7 +366,7 @@ export class NexChat {
   // ) {}
 
   private handleSocketEvent(data: any) {
-    this.log("Received socket data: ", data);
+    this.log('Received socket data: ', data);
 
     const jsonData = JSON.parse(data);
     const eventType = jsonData.eventType as keyof SocketEvent;
@@ -387,28 +388,42 @@ export class NexChat {
 
   /**
    * Connects to the server asynchronously.
-   * @returns A promise that resolves when the connection is established.
+   * @returns void
    * @throws Error if loginUser is not called before connecting.
    */
-  async connectAsync(): Promise<void> {
+  async connectAsync() {
+    if (this.isServerIntegration) {
+      throw new Error(
+        'Websocket connection is not supported for server to server integration'
+      );
+    }
+
+    if (!this.externalUserId || !this.authToken) {
+      throw new Error('Call loginUser before connecting');
+    }
+
+    if (this.ws) {
+      this.log(
+        'Already connected. You should only call this if connection is closed'
+      );
+      return;
+    }
+
+    backOff(() => this.connectToWebSocket(), {
+      jitter: 'full',
+      numOfAttempts: 5,
+      timeMultiple: 4,
+    }).catch((reason) => {
+      this.log(
+        'Failed to connect to websocket after multiple attempts:',
+        reason
+      );
+    });
+  }
+
+  private connectToWebSocket() {
     return new Promise((resolve, reject) => {
-      if (this.isServerIntegration) {
-        throw new Error(
-          "Websocket connection is not supported for server to server integration"
-        );
-      }
-
-      if (!this.externalUserId || !this.authToken) {
-        throw new Error("Call loginUser before connecting");
-      }
-
-      if (this.ws) {
-        this.log(
-          "Already connected. You should only call this if connection is closed"
-        );
-        return;
-      }
-
+      this.log('Attempting connection to websocket');
       // @ts-ignore
       this.ws = new WebSocket(this.getBaseUrls().webSocketUrl, undefined, {
         headers: {
@@ -418,39 +433,33 @@ export class NexChat {
       });
 
       this.ws.onopen = () => {
-        this.socketRetryCount = 0;
-        this.log("Connected to the server");
-        resolve();
+        this.log('Connected to the websocket');
+        resolve({ message: 'Connected to the websocket' });
       };
 
-      this.ws.onmessage = (e) => {
-        this.handleSocketEvent(e.data);
+      this.ws.onmessage = (event) => {
+        this.log('Received message from websocket', event?.data);
+        this.handleSocketEvent(event?.data);
       };
 
       this.ws.onerror = (e) => {
+        this.ws = undefined;
         // @ts-ignore
-        this.log(e.message);
-
-        this.socketRetryCount += 1;
-        if (this.socketRetryCount > 3) {
-          reject();
-        }
-
-        setTimeout(() => {
-          this.connectAsync();
-        }, 5000);
+        this.log('Websocket connection error', e?.message);
+        reject?.(e);
       };
 
       this.ws.onclose = (e) => {
         this.ws = undefined;
-        this.log(e.code, e.reason);
+        this.log('Websocket connection closed', e?.code, e?.reason);
+        reject?.(e);
       };
     });
   }
 
-  setPushToken(pushToken: string, provider: "FCM" | "APNS") {
+  setPushToken(pushToken: string, provider: 'FCM' | 'APNS') {
     if (!this.externalUserId) {
-      throw new Error("Call loginUser before setting device token");
+      throw new Error('Call loginUser before setting device token');
     }
     this.pushToken = pushToken;
     this.api
@@ -460,7 +469,7 @@ export class NexChat {
 
   async unSetPushToken(pushToken: string) {
     if (!this.externalUserId) {
-      throw new Error("Call loginUser before setting device token");
+      throw new Error('Call loginUser before setting device token');
     }
     await this.api
       .post(`/users/${this.externalUserId}/push-token/delete`, { pushToken })
@@ -476,7 +485,7 @@ export class NexChat {
   }): Promise<{ users: User[]; isLastPage: boolean }> {
     return new Promise((resolve, reject) => {
       this.api
-        .get("/users", { params: { limit, offset } })
+        .get('/users', { params: { limit, offset } })
         .then(({ data }) => resolve(data))
         .catch((error) => genericCatch(error, reject));
     });
@@ -490,7 +499,7 @@ export class NexChat {
   }): Promise<Array<UploadUrlResponse & { uri: string }>> {
     return new Promise((resolve, reject) => {
       this.api
-        .post("/upload-url", uploadMetaData)
+        .post('/upload-url', uploadMetaData)
         .then(({ data }) => data.urls)
         .then((signedUrlList) => {
           const dataWithFileUri = _.map(
@@ -503,7 +512,7 @@ export class NexChat {
                   uri: originalMetaData.fileUri,
                 };
               } else {
-                genericCatch("mimeType mismatch", reject);
+                genericCatch('mimeType mismatch', reject);
               }
             }
           );

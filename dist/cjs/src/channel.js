@@ -216,10 +216,10 @@ var Channel = /** @class */ (function () {
      * @returns A promise that resolves to the sent message.
      */
     Channel.prototype.sendMessageAsync = function (_a) {
-        var text = _a.text, externalUserId = _a.externalUserId, urlPreview = _a.urlPreview, attachments = _a.attachments;
-        return __awaiter(this, void 0, void 0, function () {
+        return __awaiter(this, arguments, void 0, function (_b) {
             var _this = this;
-            return __generator(this, function (_b) {
+            var text = _b.text, externalUserId = _b.externalUserId, urlPreview = _b.urlPreview, attachments = _b.attachments;
+            return __generator(this, function (_c) {
                 return [2 /*return*/, new Promise(function (resolve, reject) {
                         _this.client.api
                             .post("/channels/".concat(_this.channelId, "/members/").concat(externalUserId !== null && externalUserId !== void 0 ? externalUserId : _this.client.externalUserId, "/message"), {
@@ -244,10 +244,10 @@ var Channel = /** @class */ (function () {
      * @returns A promise that resolves to an object containing the messages and a flag indicating if it's the last page.
      */
     Channel.prototype.getChannelMessagesAsync = function (_a) {
-        var lastCreatedAt = _a.lastCreatedAt, _b = _a.limit, limit = _b === void 0 ? 20 : _b;
-        return __awaiter(this, void 0, void 0, function () {
+        return __awaiter(this, arguments, void 0, function (_b) {
             var _this = this;
-            return __generator(this, function (_c) {
+            var lastCreatedAt = _b.lastCreatedAt, _c = _b.limit, limit = _c === void 0 ? 20 : _c;
+            return __generator(this, function (_d) {
                 return [2 /*return*/, new Promise(function (resolve, reject) {
                         _this.client.api
                             .get("/channels/".concat(_this.channelId, "/messages"), {
