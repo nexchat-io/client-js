@@ -18,6 +18,7 @@ export class Channel {
   channelImageUrl?: string;
   channelType: string;
   lastMessage?: Message;
+  lastActivityAt?: string;
   metadata?: Record<string, any>;
   members: ChannelMember[] = [];
   unreadCount = 0;
@@ -53,6 +54,7 @@ export class Channel {
     this.channelImageUrl = channelData.channelImageUrl;
     this.metadata = channelData.metadata;
     this.lastMessage = channelData.messages?.[0];
+    this.lastActivityAt = channelData.lastActivityAt;
     this.unreadCount =
       _.find(
         channelData.members,
@@ -125,6 +127,7 @@ export class Channel {
   ) {
     if (eventType === "message.new") {
       this.lastMessage = data as Message;
+      this.lastActivityAt = this.lastMessage.createdAt;
 
       // Do not increment unread count if own message
       if (this.client.externalUserId !== this.lastMessage.user.externalUserId) {

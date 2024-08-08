@@ -32,6 +32,7 @@ export type ChannelData = {
   metadata?: Record<string, any>;
   members: ChannelMember[];
   messages: Message[];
+  lastActivityAt: string;
 };
 
 export type ChannelUpdateData = {
@@ -49,10 +50,10 @@ export type ChannelUnreadCount = {
 };
 
 export type SocketEvent = {
-  "message.new": Message;
-  "channel.updateUnReadCount": ChannelUnreadCount;
-  "channel.created": ChannelData;
-  "channel.update": {
+  'message.new': Message;
+  'channel.updateUnReadCount': ChannelUnreadCount;
+  'channel.created': ChannelData;
+  'channel.update': {
     channelId: string;
   };
 };
@@ -66,7 +67,7 @@ export type UploadUrlResponse = {
 export type SendMessageProps = {
   text?: string;
   externalUserId?: string;
-  urlPreview?: { url: string };
+  urlPreview?: {url: string};
   attachments?: Array<{
     fileId: string;
     mimeType: string;

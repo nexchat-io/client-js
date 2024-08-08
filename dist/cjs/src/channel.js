@@ -80,6 +80,7 @@ var Channel = /** @class */ (function () {
         this.channelImageUrl = channelData.channelImageUrl;
         this.metadata = channelData.metadata;
         this.lastMessage = (_a = channelData.messages) === null || _a === void 0 ? void 0 : _a[0];
+        this.lastActivityAt = channelData.lastActivityAt;
         this.unreadCount =
             (_c = (_b = lodash_1.default.find(channelData.members, function (member) { return member.user.externalUserId === _this.client.externalUserId; })) === null || _b === void 0 ? void 0 : _b.unreadCount) !== null && _c !== void 0 ? _c : 0;
         this.isBlocked = false;
@@ -137,6 +138,7 @@ var Channel = /** @class */ (function () {
         var _this = this;
         if (eventType === "message.new") {
             this.lastMessage = data;
+            this.lastActivityAt = this.lastMessage.createdAt;
             // Do not increment unread count if own message
             if (this.client.externalUserId !== this.lastMessage.user.externalUserId) {
                 this.handleChannelEvent("channel.updateUnReadCount", {
@@ -214,10 +216,10 @@ var Channel = /** @class */ (function () {
      * @returns A promise that resolves to the sent message.
      */
     Channel.prototype.sendMessageAsync = function (_a) {
-        return __awaiter(this, arguments, void 0, function (_b) {
+        var text = _a.text, externalUserId = _a.externalUserId, urlPreview = _a.urlPreview, attachments = _a.attachments;
+        return __awaiter(this, void 0, void 0, function () {
             var _this = this;
-            var text = _b.text, externalUserId = _b.externalUserId, urlPreview = _b.urlPreview, attachments = _b.attachments;
-            return __generator(this, function (_c) {
+            return __generator(this, function (_b) {
                 return [2 /*return*/, new Promise(function (resolve, reject) {
                         _this.client.api
                             .post("/channels/".concat(_this.channelId, "/members/").concat(externalUserId !== null && externalUserId !== void 0 ? externalUserId : _this.client.externalUserId, "/message"), {
@@ -242,10 +244,10 @@ var Channel = /** @class */ (function () {
      * @returns A promise that resolves to an object containing the messages and a flag indicating if it's the last page.
      */
     Channel.prototype.getChannelMessagesAsync = function (_a) {
-        return __awaiter(this, arguments, void 0, function (_b) {
+        var lastCreatedAt = _a.lastCreatedAt, _b = _a.limit, limit = _b === void 0 ? 20 : _b;
+        return __awaiter(this, void 0, void 0, function () {
             var _this = this;
-            var lastCreatedAt = _b.lastCreatedAt, _c = _b.limit, limit = _c === void 0 ? 20 : _c;
-            return __generator(this, function (_d) {
+            return __generator(this, function (_c) {
                 return [2 /*return*/, new Promise(function (resolve, reject) {
                         _this.client.api
                             .get("/channels/".concat(_this.channelId, "/messages"), {

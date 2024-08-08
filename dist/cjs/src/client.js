@@ -251,10 +251,10 @@ var NexChat = /** @class */ (function () {
      * @param channelId - The channel ID.
      * @returns A promise that resolves to the channel.
      */
-    NexChat.prototype.getChannelByIdAsync = function (channelId_1) {
-        return __awaiter(this, arguments, void 0, function (channelId, forceFetch) {
+    NexChat.prototype.getChannelByIdAsync = function (channelId, forceFetch) {
+        if (forceFetch === void 0) { forceFetch = false; }
+        return __awaiter(this, void 0, void 0, function () {
             var _this = this;
-            if (forceFetch === void 0) { forceFetch = false; }
             return __generator(this, function (_a) {
                 return [2 /*return*/, new Promise(function (resolve, reject) {
                         var channel = _this.activeChannels[channelId];
@@ -279,10 +279,10 @@ var NexChat = /** @class */ (function () {
      * @returns A promise that resolves to an object containing the channels and whether it is the last page.
      */
     NexChat.prototype.getUserChannelsAsync = function (_a) {
-        return __awaiter(this, arguments, void 0, function (_b) {
+        var _b = _a.limit, limit = _b === void 0 ? 10 : _b, _c = _a.offset, offset = _c === void 0 ? 0 : _c;
+        return __awaiter(this, void 0, void 0, function () {
             var _this = this;
-            var _c = _b.limit, limit = _c === void 0 ? 10 : _c, _d = _b.offset, offset = _d === void 0 ? 0 : _d;
-            return __generator(this, function (_e) {
+            return __generator(this, function (_d) {
                 return [2 /*return*/, new Promise(function (resolve, reject) {
                         _this.api
                             .get("/users/".concat(_this.externalUserId, "/channels"), {
@@ -546,8 +546,8 @@ var NexChat = /** @class */ (function () {
      * Logs out the user and closes the websocket connection.
      */
     NexChat.prototype.logoutUser = function () {
+        var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var _a;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:

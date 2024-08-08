@@ -28,6 +28,7 @@ export type ChannelData = {
     metadata?: Record<string, any>;
     members: ChannelMember[];
     messages: Message[];
+    lastActivityAt: string;
 };
 export type ChannelUpdateData = {
     channelId: string;
@@ -42,10 +43,10 @@ export type ChannelUnreadCount = {
     unreadCount: number;
 };
 export type SocketEvent = {
-    "message.new": Message;
-    "channel.updateUnReadCount": ChannelUnreadCount;
-    "channel.created": ChannelData;
-    "channel.update": {
+    'message.new': Message;
+    'channel.updateUnReadCount': ChannelUnreadCount;
+    'channel.created': ChannelData;
+    'channel.update': {
         channelId: string;
     };
 };

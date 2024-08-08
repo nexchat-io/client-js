@@ -9,6 +9,7 @@ export declare class Channel {
     channelImageUrl?: string;
     channelType: string;
     lastMessage?: Message;
+    lastActivityAt?: string;
     metadata?: Record<string, any>;
     members: ChannelMember[];
     unreadCount: number;
