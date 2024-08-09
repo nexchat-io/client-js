@@ -58,9 +58,9 @@ export type UploadUrlResponse = {
 export type SendMessageProps = {
     text?: string;
     externalUserId?: string;
-    urlPreview?: {
+    urlPreview?: [{
         url: string;
-    };
+    }];
     attachments?: Array<{
         fileId: string;
         mimeType: string;
