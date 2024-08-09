@@ -82,15 +82,15 @@ var NexChat = /** @class */ (function () {
         });
     }
     NexChat.prototype.getBaseUrls = function () {
-        if (this.apiKey.startsWith('prod_')) {
+        if (this.apiKey.startsWith('dev_')) {
             return {
-                baseUrl: PROD_BASE_URL,
-                webSocketUrl: PROD_WEB_SOCKET_URL,
+                baseUrl: DEV_BASE_URL,
+                webSocketUrl: DEV_WEB_SOCKET_URL,
             };
         }
         return {
-            baseUrl: DEV_BASE_URL,
-            webSocketUrl: DEV_WEB_SOCKET_URL,
+            baseUrl: PROD_BASE_URL,
+            webSocketUrl: PROD_WEB_SOCKET_URL,
         };
     };
     /**
