@@ -1,9 +1,7 @@
 export const DEV_BASE_URL =
-  "https://isqhnlnlxj.execute-api.ap-south-1.amazonaws.com/v1";
+  'https://isqhnlnlxj.execute-api.ap-south-1.amazonaws.com/v1';
 export const DEV_WEB_SOCKET_URL =
-  "wss://s85rlq0udb.execute-api.ap-south-1.amazonaws.com/v1";
+  'wss://s85rlq0udb.execute-api.ap-south-1.amazonaws.com/v1';
 
-export const PROD_BASE_URL =
-  "https://rkl68mk51i.execute-api.ap-south-1.amazonaws.com/v1";
-export const PROD_WEB_SOCKET_URL =
-  "wss://jhuhqvn5h9.execute-api.ap-south-1.amazonaws.com/v1";
+export const PROD_BASE_URL = 'https://api.nexchat.io';
+export const PROD_WEB_SOCKET_URL = 'wss://ws.nexchat.io';
