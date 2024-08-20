@@ -1,5 +1,5 @@
-export { NexChat } from "./src/client";
-export { Channel } from "./src/channel";
+export { NexChat } from './src/client';
+export { Channel } from './src/channel';
 export type {
   Message,
   ChannelData,
@@ -7,4 +7,4 @@ export type {
   ChannelUnreadCount,
   ChannelUpdateData,
   User,
-} from "./src/types";
+} from './src/types';

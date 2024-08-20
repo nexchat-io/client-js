@@ -13,9 +13,11 @@ export declare class NexChat {
     private authToken?;
     externalUserId?: string;
     private ws?;
-    private socketRetryCount;
     private pushToken?;
     private logsEnabled;
+    private socketConnectionAttempts;
+    private socketConnectionMaxAttempts;
+    private socketConnectionRetryDelay;
     userName?: string;
     profileImageUrl?: string;
     metadata?: Record<string, any>;
@@ -116,7 +118,8 @@ export declare class NexChat {
      * @throws Error if loginUser is not called before connecting.
      */
     connectAsync(): Promise<void>;
-    private connectToWebSocket;
+    private connectAsyncWithDelay;
+    socketConnectionCheck(): void;
     setPushToken(pushToken: string, provider: 'FCM' | 'APNS'): void;
     unSetPushToken(pushToken: string): Promise<void>;
     getUsersAsync({ limit, offset, }: {

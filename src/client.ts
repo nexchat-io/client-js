@@ -34,6 +34,10 @@ export class NexChat {
   private pushToken?: string;
   private logsEnabled = false;
 
+  private socketConnectionAttempts = 0;
+  private socketConnectionMaxAttempts = 10;
+  private socketConnectionRetryDelay = 1500;
+
   userName?: string;
   profileImageUrl?: string;
   metadata?: Record<string, any>;
@@ -403,57 +407,60 @@ export class NexChat {
 
     if (this.ws) {
       this.log(
-        'Already connected. You should only call this if connection is closed'
+        'Already connected or attempting websocket connection, will not connect again'
       );
       return;
     }
 
-    backOff(() => this.connectToWebSocket(), {
-      jitter: 'full',
-      numOfAttempts: 5,
-      timeMultiple: 4,
-    }).catch((reason) => {
-      this.log(
-        'Failed to connect to websocket after multiple attempts:',
-        reason
-      );
+    if (this.socketConnectionAttempts >= this.socketConnectionMaxAttempts) {
+      this.log('Max socket connection attempts reached');
+      return;
+    }
+
+    this.socketConnectionAttempts++;
+    this.log('Attempting connection to websocket');
+    // @ts-ignore
+    this.ws = new WebSocket(this.getBaseUrls().webSocketUrl, undefined, {
+      headers: {
+        api_key: this.apiKey,
+        auth_token: this.authToken,
+      },
     });
+
+    this.ws.onopen = () => {
+      this.log('Connected to the websocket');
+    };
+
+    this.ws.onmessage = (event) => {
+      this.log('Received message from websocket', event?.data);
+      this.handleSocketEvent(event?.data);
+    };
+
+    this.ws.onerror = (e) => {
+      // @ts-ignore
+      this.log('Websocket connection error', e);
+    };
+
+    this.ws.onclose = (e) => {
+      this.ws?.close?.();
+      this.ws = undefined;
+      this.log('Websocket connection closed', e);
+
+      this.connectAsyncWithDelay();
+    };
   }
 
-  private connectToWebSocket() {
-    return new Promise((resolve, reject) => {
-      this.log('Attempting connection to websocket');
-      // @ts-ignore
-      this.ws = new WebSocket(this.getBaseUrls().webSocketUrl, undefined, {
-        headers: {
-          api_key: this.apiKey,
-          auth_token: this.authToken,
-        },
-      });
+  private connectAsyncWithDelay() {
+    setTimeout(() => {
+      this.log('Will try to reconnect to websocket');
+      this.connectAsync();
+    }, this.socketConnectionRetryDelay);
+  }
 
-      this.ws.onopen = () => {
-        this.log('Connected to the websocket');
-        resolve({ message: 'Connected to the websocket' });
-      };
-
-      this.ws.onmessage = (event) => {
-        this.log('Received message from websocket', event?.data);
-        this.handleSocketEvent(event?.data);
-      };
-
-      this.ws.onerror = (e) => {
-        this.ws = undefined;
-        // @ts-ignore
-        this.log('Websocket connection error', e?.message);
-        reject?.(e);
-      };
-
-      this.ws.onclose = (e) => {
-        this.ws = undefined;
-        this.log('Websocket connection closed', e?.code, e?.reason);
-        reject?.(e);
-      };
-    });
+  socketConnectionCheck() {
+    if (!this.ws || this.ws.readyState === WebSocket.CLOSED) {
+      this.connectAsyncWithDelay();
+    }
   }
 
   setPushToken(pushToken: string, provider: 'FCM' | 'APNS') {

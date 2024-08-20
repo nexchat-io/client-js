@@ -51,7 +51,6 @@ import _ from 'lodash';
 import { Channel } from './channel';
 import { DEV_BASE_URL, DEV_WEB_SOCKET_URL, PROD_BASE_URL, PROD_WEB_SOCKET_URL, } from './constants';
 import { genericCatch, invalidInvocationError } from './utils';
-import { backOff } from 'exponential-backoff';
 AxiosLogger.setGlobalConfig({
     params: true,
     headers: true,
@@ -66,8 +65,10 @@ var NexChat = /** @class */ (function () {
      * @param apiSecret - The API secret (required for server auth).
      */
     function NexChat(apiKey, apiSecret) {
-        this.socketRetryCount = 0;
         this.logsEnabled = false;
+        this.socketConnectionAttempts = 0;
+        this.socketConnectionMaxAttempts = 10;
+        this.socketConnectionRetryDelay = 1500;
         this.activeChannels = {};
         this.listeners = {};
         this.isServerIntegration = !!apiSecret;
@@ -406,51 +407,55 @@ var NexChat = /** @class */ (function () {
                     throw new Error('Call loginUser before connecting');
                 }
                 if (this.ws) {
-                    this.log('Already connected. You should only call this if connection is closed');
+                    this.log('Already connected or attempting websocket connection, will not connect again');
                     return [2 /*return*/];
                 }
-                backOff(function () { return _this.connectToWebSocket(); }, {
-                    jitter: 'full',
-                    numOfAttempts: 5,
-                    timeMultiple: 4,
-                }).catch(function (reason) {
-                    _this.log('Failed to connect to websocket after multiple attempts:', reason);
+                if (this.socketConnectionAttempts >= this.socketConnectionMaxAttempts) {
+                    this.log('Max socket connection attempts reached');
+                    return [2 /*return*/];
+                }
+                this.socketConnectionAttempts++;
+                this.log('Attempting connection to websocket');
+                // @ts-ignore
+                this.ws = new WebSocket(this.getBaseUrls().webSocketUrl, undefined, {
+                    headers: {
+                        api_key: this.apiKey,
+                        auth_token: this.authToken,
+                    },
                 });
+                this.ws.onopen = function () {
+                    _this.log('Connected to the websocket');
+                };
+                this.ws.onmessage = function (event) {
+                    _this.log('Received message from websocket', event === null || event === void 0 ? void 0 : event.data);
+                    _this.handleSocketEvent(event === null || event === void 0 ? void 0 : event.data);
+                };
+                this.ws.onerror = function (e) {
+                    // @ts-ignore
+                    _this.log('Websocket connection error', e);
+                };
+                this.ws.onclose = function (e) {
+                    var _a, _b;
+                    (_b = (_a = _this.ws) === null || _a === void 0 ? void 0 : _a.close) === null || _b === void 0 ? void 0 : _b.call(_a);
+                    _this.ws = undefined;
+                    _this.log('Websocket connection closed', e);
+                    _this.connectAsyncWithDelay();
+                };
                 return [2 /*return*/];
             });
         });
     };
-    NexChat.prototype.connectToWebSocket = function () {
+    NexChat.prototype.connectAsyncWithDelay = function () {
         var _this = this;
-        return new Promise(function (resolve, reject) {
-            _this.log('Attempting connection to websocket');
-            // @ts-ignore
-            _this.ws = new WebSocket(_this.getBaseUrls().webSocketUrl, undefined, {
-                headers: {
-                    api_key: _this.apiKey,
-                    auth_token: _this.authToken,
-                },
-            });
-            _this.ws.onopen = function () {
-                _this.log('Connected to the websocket');
-                resolve({ message: 'Connected to the websocket' });
-            };
-            _this.ws.onmessage = function (event) {
-                _this.log('Received message from websocket', event === null || event === void 0 ? void 0 : event.data);
-                _this.handleSocketEvent(event === null || event === void 0 ? void 0 : event.data);
-            };
-            _this.ws.onerror = function (e) {
-                _this.ws = undefined;
-                // @ts-ignore
-                _this.log('Websocket connection error', e === null || e === void 0 ? void 0 : e.message);
-                reject === null || reject === void 0 ? void 0 : reject(e);
-            };
-            _this.ws.onclose = function (e) {
-                _this.ws = undefined;
-                _this.log('Websocket connection closed', e === null || e === void 0 ? void 0 : e.code, e === null || e === void 0 ? void 0 : e.reason);
-                reject === null || reject === void 0 ? void 0 : reject(e);
-            };
-        });
+        setTimeout(function () {
+            _this.log('Will try to reconnect to websocket');
+            _this.connectAsync();
+        }, this.socketConnectionRetryDelay);
+    };
+    NexChat.prototype.socketConnectionCheck = function () {
+        if (!this.ws || this.ws.readyState === WebSocket.CLOSED) {
+            this.connectAsyncWithDelay();
+        }
     };
     NexChat.prototype.setPushToken = function (pushToken, provider) {
         var _this = this;
