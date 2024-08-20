@@ -429,6 +429,7 @@ export class NexChat {
 
     this.ws.onopen = () => {
       this.log('Connected to the websocket');
+      this.socketConnectionAttempts = 0;
     };
 
     this.ws.onmessage = (event) => {

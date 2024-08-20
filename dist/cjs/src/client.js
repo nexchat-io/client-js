@@ -454,6 +454,7 @@ var NexChat = /** @class */ (function () {
                 });
                 this.ws.onopen = function () {
                     _this.log('Connected to the websocket');
+                    _this.socketConnectionAttempts = 0;
                 };
                 this.ws.onmessage = function (event) {
                     _this.log('Received message from websocket', event === null || event === void 0 ? void 0 : event.data);
