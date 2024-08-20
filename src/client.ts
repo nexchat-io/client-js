@@ -31,7 +31,6 @@ export class NexChat {
   private authToken?: string;
   public externalUserId?: string;
   private ws?: WebSocket;
-  private socketRetryCount = 0;
   private pushToken?: string;
   private logsEnabled = false;
 
