@@ -19,6 +19,7 @@ export type Message = {
     createdAt: string;
     text: string;
     user: User;
+    urlPreview: FulfilledLinkPreview[] | [];
 };
 export type ChannelData = {
     channelId: string;
@@ -58,11 +59,32 @@ export type UploadUrlResponse = {
 export type SendMessageProps = {
     text?: string;
     externalUserId?: string;
-    urlPreview?: [{
-        url: string;
-    }];
+    urlPreview?: FulfilledLinkPreview[];
     attachments?: Array<{
         fileId: string;
         mimeType: string;
     }>;
 };
+export interface FulfilledLinkPreview {
+    url: string;
+    title: string;
+    siteName: string;
+    description: string;
+    mediaType: string;
+    contentType: string;
+    images: string[];
+    videos: string[];
+    favicons: string[];
+    charset: string;
+    originalUrl: string;
+    source: 'store' | 'api';
+}
+export interface RejectedLinkPreviewReason {
+    message: string;
+    type: 'system' | 'other';
+}
+export interface LinkPreviewResponse {
+    status: 'fulfilled' | 'rejected';
+    value?: FulfilledLinkPreview;
+    reason?: RejectedLinkPreviewReason;
+}
