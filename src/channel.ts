@@ -1,5 +1,5 @@
-import _ from "lodash";
-import { NexChat } from "./client";
+import _ from 'lodash';
+import { NexChat } from './client';
 import {
   ChannelData,
   ChannelMember,
@@ -7,7 +7,7 @@ import {
   Message,
   SocketEvent,
   SendMessageProps,
-} from "./types";
+} from './types';
 
 /**
  * Represents a chat channel.
@@ -83,8 +83,8 @@ export class Channel {
     eventType: K,
     callback: (data: SocketEvent[K]) => void
   ): () => void {
-    if (typeof callback !== "function") {
-      throw new Error("Invalid callback. It has to be a function");
+    if (typeof callback !== 'function') {
+      throw new Error('Invalid callback. It has to be a function');
     }
 
     if (!this.listeners[eventType]) {
@@ -125,13 +125,13 @@ export class Channel {
     eventType: K,
     data: SocketEvent[K]
   ) {
-    if (eventType === "message.new") {
+    if (eventType === 'message.new') {
       this.lastMessage = data as Message;
       this.lastActivityAt = this.lastMessage.createdAt;
 
       // Do not increment unread count if own message
       if (this.client.externalUserId !== this.lastMessage.user.externalUserId) {
-        this.handleChannelEvent("channel.updateUnReadCount", {
+        this.handleChannelEvent('channel.updateUnReadCount', {
           channelId: this.channelId,
           unreadCount: this.unreadCount + 1,
         });
@@ -139,14 +139,14 @@ export class Channel {
       this.triggerChannelListeners(eventType, data);
     }
 
-    if (eventType === "channel.updateUnReadCount") {
+    if (eventType === 'channel.updateUnReadCount') {
       const unreadCount = (data as ChannelUnreadCount).unreadCount;
       this.unreadCount = unreadCount;
 
       this.triggerChannelListeners(eventType, data);
     }
 
-    if (eventType === "channel.update") {
+    if (eventType === 'channel.update') {
       this.client.getChannelByIdAsync(this.channelId, true).then(() => {
         this.triggerChannelListeners(eventType, data);
       });
@@ -161,7 +161,7 @@ export class Channel {
   async createChannelAsync(members: string[]) {
     return new Promise((resolve, reject) => {
       this.client.api
-        .post("/channels", {
+        .post('/channels', {
           members,
         })
         .then(({ data = {} }) => {
@@ -169,7 +169,7 @@ export class Channel {
             this.channelId = data.channel.channelId;
             resolve(data);
           } else {
-            throw new Error("Channel not created");
+            throw new Error('Channel not created');
           }
         })
         .catch(reject);
@@ -250,21 +250,25 @@ export class Channel {
     });
   }
 
-  private markChannelReadThrottled = _.throttle(() => {
-    this.client.api
-      .post(
-        `/channels/${this.channelId}/members/${this.client.externalUserId}/read`
-      )
-      .then(() => {})
-      .catch(() => {});
-  }, 5000);
+  private markChannelReadThrottled = _.throttle(
+    () => {
+      this.client.sendSocketData({
+        action: 'markChannelRead',
+        data: {
+          channelId: this.channelId,
+        },
+      });
+    },
+    2000,
+    { leading: true, trailing: true }
+  );
 
   /**
    * Marks the channel as read for the current user.
    * @returns A promise that resolves when the channel is marked as read.
    */
   markChannelRead() {
-    this.handleChannelEvent("channel.updateUnReadCount", {
+    this.handleChannelEvent('channel.updateUnReadCount', {
       channelId: this.channelId,
       unreadCount: 0,
     });
@@ -312,8 +316,8 @@ export class Channel {
    * @returns An object containing the name and image URL of the channel.
    */
   getDisplayDetails() {
-    let name = "";
-    let imageUrl = "";
+    let name = '';
+    let imageUrl = '';
 
     if (this.members.length === 2) {
       const messagingUser = this.members.find(
@@ -325,10 +329,10 @@ export class Channel {
         this.channelName ??
         messagingUser?.externalUserId ??
         this.channelId;
-      imageUrl = messagingUser?.profileImageUrl ?? this.channelImageUrl ?? "";
+      imageUrl = messagingUser?.profileImageUrl ?? this.channelImageUrl ?? '';
     } else {
       name = this.channelName ?? this.channelId;
-      imageUrl = this.channelImageUrl ?? "";
+      imageUrl = this.channelImageUrl ?? '';
     }
 
     return {

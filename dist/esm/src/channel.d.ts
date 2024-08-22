@@ -1,5 +1,5 @@
-import { NexChat } from "./client";
-import { ChannelData, ChannelMember, Message, SocketEvent, SendMessageProps } from "./types";
+import { NexChat } from './client';
+import { ChannelData, ChannelMember, Message, SocketEvent, SendMessageProps } from './types';
 /**
  * Represents a chat channel.
  */

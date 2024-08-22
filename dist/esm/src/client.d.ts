@@ -25,6 +25,7 @@ export declare class NexChat {
     listeners: {
         [K in keyof SocketEvent]?: Array<(data: SocketEvent[K]) => void>;
     };
+    totalUnreadCount: number;
     /**
      * Creates an instance of NexChat.
      * @param apiKey - The API key.
@@ -111,6 +112,7 @@ export declare class NexChat {
      * @param eventType - The event type to handle.
      * @param data - The data associated with the event.
      */
+    handleClientEvent<K extends keyof SocketEvent>(eventType: K, data: SocketEvent[K]): void;
     private handleSocketEvent;
     /**
      * Connects to the server asynchronously.
@@ -120,6 +122,7 @@ export declare class NexChat {
     connectAsync(): Promise<void>;
     private connectAsyncWithDelay;
     socketConnectionCheck(): void;
+    sendSocketData(data: Record<string, any>): void;
     setPushToken(pushToken: string, provider: 'FCM' | 'APNS'): void;
     unSetPushToken(pushToken: string): Promise<void>;
     getUsersAsync({ limit, offset, }: {
@@ -137,6 +140,7 @@ export declare class NexChat {
     }): Promise<Array<UploadUrlResponse & {
         uri: string;
     }>>;
+    getTotalUnreadCount(): void;
     /**
      * Logs out the user and closes the websocket connection.
      */

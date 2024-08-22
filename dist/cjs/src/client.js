@@ -100,6 +100,7 @@ var NexChat = /** @class */ (function () {
         this.socketConnectionRetryDelay = 1500;
         this.activeChannels = {};
         this.listeners = {};
+        this.totalUnreadCount = 0;
         this.isServerIntegration = !!apiSecret;
         this.apiKey = apiKey;
         this.apiSecret = apiSecret;
@@ -240,6 +241,7 @@ var NexChat = /** @class */ (function () {
                             _this.userName = user.userName;
                             _this.profileImageUrl = user.profileImageUrl;
                             _this.metadata = user.metadata;
+                            _this.getTotalUnreadCount();
                             _this.connectAsync();
                             resolve(user);
                         })
@@ -401,18 +403,24 @@ var NexChat = /** @class */ (function () {
      * @param eventType - The event type to handle.
      * @param data - The data associated with the event.
      */
-    // handleClientEvent<K extends keyof SocketEvent>(
-    //   eventType: K,
-    //   data: SocketEvent[K],
-    // ) {}
+    NexChat.prototype.handleClientEvent = function (eventType, data) {
+        if (eventType === 'user.totalUnreadCount') {
+            this.totalUnreadCount = data;
+            this.triggerClientListners(eventType, data);
+        }
+    };
     NexChat.prototype.handleSocketEvent = function (data) {
         this.log('Received socket data: ', data);
         var jsonData = JSON.parse(data);
         var eventType = jsonData.eventType;
         var eventData = jsonData.data;
+        if (lodash_1.default.isEmpty(eventType) || lodash_1.default.isNil(eventData)) {
+            this.log('Invalid socket event data');
+            return;
+        }
         var channelId = eventData.channelId;
         var channel = this.activeChannels[channelId];
-        // this.handleClientEvent(eventType, eventData);
+        this.handleClientEvent(eventType, eventData);
         // Handle channel events
         if (channel) {
             channel.handleChannelEvent(eventType, eventData);
@@ -457,7 +465,6 @@ var NexChat = /** @class */ (function () {
                     _this.socketConnectionAttempts = 0;
                 };
                 this.ws.onmessage = function (event) {
-                    _this.log('Received message from websocket', event === null || event === void 0 ? void 0 : event.data);
                     _this.handleSocketEvent(event === null || event === void 0 ? void 0 : event.data);
                 };
                 this.ws.onerror = function (e) {
@@ -486,6 +493,15 @@ var NexChat = /** @class */ (function () {
         if (!this.ws || this.ws.readyState === WebSocket.CLOSED) {
             this.connectAsyncWithDelay();
         }
+    };
+    NexChat.prototype.sendSocketData = function (data) {
+        var _a;
+        this.log('Sending socket data: ', data);
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+            this.log('Websocket is not connected yet');
+            return;
+        }
+        (_a = this.ws) === null || _a === void 0 ? void 0 : _a.send(JSON.stringify(data));
     };
     NexChat.prototype.setPushToken = function (pushToken, provider) {
         var _this = this;
@@ -556,6 +572,16 @@ var NexChat = /** @class */ (function () {
                     })];
             });
         });
+    };
+    NexChat.prototype.getTotalUnreadCount = function () {
+        var _this = this;
+        this.api
+            .get("/users/".concat(this.externalUserId, "/total-unread-count"))
+            .then(function (_a) {
+            var data = _a.data;
+            _this.handleClientEvent('user.totalUnreadCount', data.totalUnreadCount);
+        })
+            .catch(function (error) { return _this.log('Error getting total unread count', error); });
     };
     /**
      * Logs out the user and closes the websocket connection.

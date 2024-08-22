@@ -29,7 +29,7 @@ export class NexChat {
 
   private isServerIntegration: boolean;
   private authToken?: string;
-  public externalUserId?: string;
+  externalUserId?: string;
   private ws?: WebSocket;
   private pushToken?: string;
   private logsEnabled = false;
@@ -45,6 +45,7 @@ export class NexChat {
   listeners: {
     [K in keyof SocketEvent]?: Array<(data: SocketEvent[K]) => void>;
   } = {};
+  totalUnreadCount = 0;
 
   /**
    * Creates an instance of NexChat.
@@ -111,7 +112,7 @@ export class NexChat {
    * @returns The NexChat instance.
    * @throws Error if API Key is not provided.
    */
-  public static getInstance(apiKey: string, apiSecret?: string): NexChat {
+  static getInstance(apiKey: string, apiSecret?: string): NexChat {
     if (!apiKey) {
       throw new Error('API Key is required');
     }
@@ -192,6 +193,7 @@ export class NexChat {
           this.profileImageUrl = user.profileImageUrl;
           this.metadata = user.metadata;
 
+          this.getTotalUnreadCount();
           this.connectAsync();
           resolve(user);
         })
@@ -363,10 +365,15 @@ export class NexChat {
    * @param eventType - The event type to handle.
    * @param data - The data associated with the event.
    */
-  // handleClientEvent<K extends keyof SocketEvent>(
-  //   eventType: K,
-  //   data: SocketEvent[K],
-  // ) {}
+  handleClientEvent<K extends keyof SocketEvent>(
+    eventType: K,
+    data: SocketEvent[K]
+  ) {
+    if (eventType === 'user.totalUnreadCount') {
+      this.totalUnreadCount = data as number;
+      this.triggerClientListners(eventType, data);
+    }
+  }
 
   private handleSocketEvent(data: any) {
     this.log('Received socket data: ', data);
@@ -375,10 +382,15 @@ export class NexChat {
     const eventType = jsonData.eventType as keyof SocketEvent;
     const eventData = jsonData.data as any;
 
+    if (_.isEmpty(eventType) || _.isNil(eventData)) {
+      this.log('Invalid socket event data');
+      return;
+    }
+
     const channelId = eventData.channelId;
     const channel = this.activeChannels[channelId];
 
-    // this.handleClientEvent(eventType, eventData);
+    this.handleClientEvent(eventType, eventData);
 
     // Handle channel events
     if (channel) {
@@ -433,7 +445,6 @@ export class NexChat {
     };
 
     this.ws.onmessage = (event) => {
-      this.log('Received message from websocket', event?.data);
       this.handleSocketEvent(event?.data);
     };
 
@@ -462,6 +473,15 @@ export class NexChat {
     if (!this.ws || this.ws.readyState === WebSocket.CLOSED) {
       this.connectAsyncWithDelay();
     }
+  }
+
+  sendSocketData(data: Record<string, any>) {
+    this.log('Sending socket data: ', data);
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      this.log('Websocket is not connected yet');
+      return;
+    }
+    this.ws?.send(JSON.stringify(data));
   }
 
   setPushToken(pushToken: string, provider: 'FCM' | 'APNS') {
@@ -498,7 +518,7 @@ export class NexChat {
     });
   }
 
-  public async createUploadUrlsAsync(uploadMetaData: {
+  async createUploadUrlsAsync(uploadMetaData: {
     metadata: Array<{
       mimeType: string;
       fileUri: string;
@@ -527,6 +547,15 @@ export class NexChat {
         })
         .catch((error) => genericCatch(error, reject));
     });
+  }
+
+  getTotalUnreadCount() {
+    this.api
+      .get(`/users/${this.externalUserId}/total-unread-count`)
+      .then(({ data }) => {
+        this.handleClientEvent('user.totalUnreadCount', data.totalUnreadCount);
+      })
+      .catch((error) => this.log('Error getting total unread count', error));
   }
 
   /**

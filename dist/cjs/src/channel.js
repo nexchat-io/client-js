@@ -58,11 +58,13 @@ var Channel = /** @class */ (function () {
         this.isOtherUserBlocked = false;
         this.listeners = {};
         this.markChannelReadThrottled = lodash_1.default.throttle(function () {
-            _this.client.api
-                .post("/channels/".concat(_this.channelId, "/members/").concat(_this.client.externalUserId, "/read"))
-                .then(function () { })
-                .catch(function () { });
-        }, 5000);
+            _this.client.sendSocketData({
+                action: 'markChannelRead',
+                data: {
+                    channelId: _this.channelId,
+                },
+            });
+        }, 2000, { leading: true, trailing: true });
         this.client = client;
         this.channelId = channelData.channelId;
         this.channelType = channelData.channelType;
@@ -103,8 +105,8 @@ var Channel = /** @class */ (function () {
      */
     Channel.prototype.on = function (eventType, callback) {
         var _this = this;
-        if (typeof callback !== "function") {
-            throw new Error("Invalid callback. It has to be a function");
+        if (typeof callback !== 'function') {
+            throw new Error('Invalid callback. It has to be a function');
         }
         if (!this.listeners[eventType]) {
             this.listeners[eventType] = [];
@@ -136,24 +138,24 @@ var Channel = /** @class */ (function () {
      */
     Channel.prototype.handleChannelEvent = function (eventType, data) {
         var _this = this;
-        if (eventType === "message.new") {
+        if (eventType === 'message.new') {
             this.lastMessage = data;
             this.lastActivityAt = this.lastMessage.createdAt;
             // Do not increment unread count if own message
             if (this.client.externalUserId !== this.lastMessage.user.externalUserId) {
-                this.handleChannelEvent("channel.updateUnReadCount", {
+                this.handleChannelEvent('channel.updateUnReadCount', {
                     channelId: this.channelId,
                     unreadCount: this.unreadCount + 1,
                 });
             }
             this.triggerChannelListeners(eventType, data);
         }
-        if (eventType === "channel.updateUnReadCount") {
+        if (eventType === 'channel.updateUnReadCount') {
             var unreadCount = data.unreadCount;
             this.unreadCount = unreadCount;
             this.triggerChannelListeners(eventType, data);
         }
-        if (eventType === "channel.update") {
+        if (eventType === 'channel.update') {
             this.client.getChannelByIdAsync(this.channelId, true).then(function () {
                 _this.triggerChannelListeners(eventType, data);
             });
@@ -170,7 +172,7 @@ var Channel = /** @class */ (function () {
             return __generator(this, function (_a) {
                 return [2 /*return*/, new Promise(function (resolve, reject) {
                         _this.client.api
-                            .post("/channels", {
+                            .post('/channels', {
                             members: members,
                         })
                             .then(function (_a) {
@@ -181,7 +183,7 @@ var Channel = /** @class */ (function () {
                                 resolve(data);
                             }
                             else {
-                                throw new Error("Channel not created");
+                                throw new Error('Channel not created');
                             }
                         })
                             .catch(reject);
@@ -270,7 +272,7 @@ var Channel = /** @class */ (function () {
      * @returns A promise that resolves when the channel is marked as read.
      */
     Channel.prototype.markChannelRead = function () {
-        this.handleChannelEvent("channel.updateUnReadCount", {
+        this.handleChannelEvent('channel.updateUnReadCount', {
             channelId: this.channelId,
             unreadCount: 0,
         });
@@ -315,17 +317,17 @@ var Channel = /** @class */ (function () {
     Channel.prototype.getDisplayDetails = function () {
         var _this = this;
         var _a, _b, _c, _d, _e, _f, _g, _h;
-        var name = "";
-        var imageUrl = "";
+        var name = '';
+        var imageUrl = '';
         if (this.members.length === 2) {
             var messagingUser = (_a = this.members.find(function (member) { return member.user.externalUserId !== _this.client.externalUserId; })) === null || _a === void 0 ? void 0 : _a.user;
             name =
                 (_d = (_c = (_b = messagingUser === null || messagingUser === void 0 ? void 0 : messagingUser.userName) !== null && _b !== void 0 ? _b : this.channelName) !== null && _c !== void 0 ? _c : messagingUser === null || messagingUser === void 0 ? void 0 : messagingUser.externalUserId) !== null && _d !== void 0 ? _d : this.channelId;
-            imageUrl = (_f = (_e = messagingUser === null || messagingUser === void 0 ? void 0 : messagingUser.profileImageUrl) !== null && _e !== void 0 ? _e : this.channelImageUrl) !== null && _f !== void 0 ? _f : "";
+            imageUrl = (_f = (_e = messagingUser === null || messagingUser === void 0 ? void 0 : messagingUser.profileImageUrl) !== null && _e !== void 0 ? _e : this.channelImageUrl) !== null && _f !== void 0 ? _f : '';
         }
         else {
             name = (_g = this.channelName) !== null && _g !== void 0 ? _g : this.channelId;
-            imageUrl = (_h = this.channelImageUrl) !== null && _h !== void 0 ? _h : "";
+            imageUrl = (_h = this.channelImageUrl) !== null && _h !== void 0 ? _h : '';
         }
         return {
             name: name,

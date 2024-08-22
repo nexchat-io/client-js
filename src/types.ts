@@ -51,6 +51,7 @@ export type ChannelUnreadCount = {
 };
 
 export type SocketEvent = {
+  'user.totalUnreadCount': number;
   'message.new': Message;
   'channel.updateUnReadCount': ChannelUnreadCount;
   'channel.created': ChannelData;
