@@ -10,7 +10,6 @@ import {
 } from './constants';
 import { ChannelData, SocketEvent, UploadUrlResponse, User } from './types';
 import { genericCatch, invalidInvocationError } from './utils';
-import { backOff } from 'exponential-backoff';
 
 AxiosLogger.setGlobalConfig({
   params: true,
@@ -35,7 +34,7 @@ export class NexChat {
   private logsEnabled = false;
 
   private socketConnectionAttempts = 0;
-  private socketConnectionMaxAttempts = 10;
+  private socketConnectionMaxAttempts = 5;
   private socketConnectionRetryDelay = 1500;
 
   userName?: string;
@@ -463,6 +462,9 @@ export class NexChat {
   }
 
   private connectAsyncWithDelay() {
+    if (!this.externalUserId || !this.authToken) {
+      return;
+    }
     setTimeout(() => {
       this.log('Will try to reconnect to websocket');
       this.connectAsync();
@@ -562,6 +564,7 @@ export class NexChat {
    * Logs out the user and closes the websocket connection.
    */
   async logoutUser() {
+    this.log('Logging out user');
     if (this.pushToken) {
       await this.unSetPushToken(this.pushToken);
     }
@@ -570,7 +573,14 @@ export class NexChat {
     this.authToken = undefined;
     this.api.defaults.headers.common.auth_token = undefined;
     this.api.defaults.headers.common.api_key = undefined;
+    this.log('Closing websocket connection');
     this.ws?.close();
     this.ws = undefined;
+    this.userName = undefined;
+    this.profileImageUrl = undefined;
+    this.metadata = undefined;
+    this.pushToken = undefined;
+    this.totalUnreadCount = 0;
+    this.socketConnectionAttempts = 0;
   }
 }

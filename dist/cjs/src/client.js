@@ -96,7 +96,7 @@ var NexChat = /** @class */ (function () {
     function NexChat(apiKey, apiSecret) {
         this.logsEnabled = false;
         this.socketConnectionAttempts = 0;
-        this.socketConnectionMaxAttempts = 10;
+        this.socketConnectionMaxAttempts = 5;
         this.socketConnectionRetryDelay = 1500;
         this.activeChannels = {};
         this.listeners = {};
@@ -484,6 +484,9 @@ var NexChat = /** @class */ (function () {
     };
     NexChat.prototype.connectAsyncWithDelay = function () {
         var _this = this;
+        if (!this.externalUserId || !this.authToken) {
+            return;
+        }
         setTimeout(function () {
             _this.log('Will try to reconnect to websocket');
             _this.connectAsync();
@@ -592,6 +595,7 @@ var NexChat = /** @class */ (function () {
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
+                        this.log('Logging out user');
                         if (!this.pushToken) return [3 /*break*/, 2];
                         return [4 /*yield*/, this.unSetPushToken(this.pushToken)];
                     case 1:
@@ -603,8 +607,15 @@ var NexChat = /** @class */ (function () {
                         this.authToken = undefined;
                         this.api.defaults.headers.common.auth_token = undefined;
                         this.api.defaults.headers.common.api_key = undefined;
+                        this.log('Closing websocket connection');
                         (_a = this.ws) === null || _a === void 0 ? void 0 : _a.close();
                         this.ws = undefined;
+                        this.userName = undefined;
+                        this.profileImageUrl = undefined;
+                        this.metadata = undefined;
+                        this.pushToken = undefined;
+                        this.totalUnreadCount = 0;
+                        this.socketConnectionAttempts = 0;
                         return [2 /*return*/];
                 }
             });
